@@ -1,0 +1,31 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy to server
+        run: |
+          ssh -o StrictHostKeyChecking=no -p ${{vars.SSH_PORT}} ${{vars.SSH_USER}}@${{vars.SSH_HOST}} << 'EOF'
+            eval $(ssh-agent)
+            ssh-add ~/.ssh/github_actions
+            cd /opt/apps/hub-totalrenting/
+            git checkout master
+            git pull origin master
+            docker compose down
+            docker compose up -d --build
+          EOF

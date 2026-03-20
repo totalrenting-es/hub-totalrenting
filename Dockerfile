@@ -1,24 +1,16 @@
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci
-
-COPY tsconfig.json ./
-COPY src ./src
-
-RUN npm run build
-
 FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci --only=production
+RUN corepack enable && corepack prepare pnpm@10.15.0 --activate
 
-COPY --from=builder /app/dist ./dist
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+COPY . .
+
+ENV NODE_ENV=production
 
 EXPOSE 3002
 
-CMD ["node", "dist/server.js"]
+CMD ["pnpm", "start"]
