@@ -60,6 +60,7 @@ services:
           memory: 256M
     networks:
       - hub-network
+      - api-network
 
   hub-2:
     build:
@@ -96,6 +97,7 @@ services:
           memory: 256M
     networks:
       - hub-network
+      - api-network
 
   hub-3:
     build:
@@ -132,7 +134,11 @@ services:
           memory: 256M
     networks:
       - hub-network
+      - api-network
 
 networks:
   hub-network:
     driver: bridge
+  api-network:
+    external: true
+    name: api-totalrenting-network
