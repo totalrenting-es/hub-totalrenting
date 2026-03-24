@@ -19,6 +19,15 @@ async function forwardToDestination(url: string, body: Record<string, unknown>):
   }
 }
 
+function shouldForwardToDestination(url: string, body: Record<string, unknown>): boolean {
+  // n8n only receives whatsapp_received events from phone 34621677469
+  if (url.includes('n8n.srv1276600.hstgr.cloud')) {
+    const { event, payload } = body as { event?: string; payload?: any };
+    return event === 'whatsapp_received' && payload?.message?.value?.metadata?.display_phone_number === '34621677469';
+  }
+  return true;
+}
+
 export async function forwardWebhook(account: 'totalrenting' | 'twipo', body: Record<string, unknown>): Promise<WebhookForwardResponse> {
   const destinations = config.vixiees[account].destinations;
 
@@ -27,10 +36,22 @@ export async function forwardWebhook(account: 'totalrenting' | 'twipo', body: Re
     return { ok: true, account, results: [] };
   }
 
-  console.log(`[Vixiees Webhook] Forwarding ${account} webhook to ${destinations.length} destination(s)`);
+  const eligibleDestinations = destinations.filter((url) => shouldForwardToDestination(url, body));
 
-  // Forward to all destinations in parallel
-  const results = await Promise.all(destinations.map((url) => forwardToDestination(url, body)));
+  const skipped = destinations.length - eligibleDestinations.length;
+  if (skipped > 0) {
+    console.log(`[Vixiees Webhook] Skipped ${skipped} destination(s) (filter mismatch)`);
+  }
+
+  if (eligibleDestinations.length === 0) {
+    console.log(`[Vixiees Webhook] No eligible destinations for ${account} webhook after filtering`);
+    return { ok: true, account, results: [] };
+  }
+
+  console.log(`[Vixiees Webhook] Forwarding ${account} webhook to ${eligibleDestinations.length} destination(s)`);
+
+  // Forward to all eligible destinations in parallel
+  const results = await Promise.all(eligibleDestinations.map((url) => forwardToDestination(url, body)));
 
   const allSuccess = results.every((r) => r.success);
 
