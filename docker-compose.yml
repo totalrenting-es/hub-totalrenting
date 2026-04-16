@@ -24,6 +24,7 @@ services:
           memory: 512M
     networks:
       - hub-network
+      - api-network
 
   hub-1:
     build:
