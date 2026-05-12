@@ -19,7 +19,7 @@ export async function proxyRequest(path: string, method: string, headers: Record
     }
   });
 
-  if (contentType && body && body.length > 0) {
+  if (contentType) {
     forwardHeaders['content-type'] = contentType;
   }
 
